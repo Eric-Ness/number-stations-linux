@@ -30,10 +30,27 @@ branding:
   wallpaper: assets/wallpaper.png
   logo: assets/logo.png
   accent_color: "#3b7ea1"
+  splash:
+    script: assets/splash/splash.script
+    images:
+      - assets/splash/strip.png
+      - assets/splash/panel.png
+      - assets/splash/title.png
+      - assets/splash/sub.png
+      - assets/splash/bar.png
+      - assets/splash/bar-bg.png
 settings:
   timezone: Etc/UTC
   hostname: station
   autologin: true
+  dock:
+    - firefox
+    - dk.gqrx.gqrx
+    - com.w1hkj.fldigi
+    - io.sourceforge.wsjt.wsjtx
+    - com.js8call.JS8Call
+    - net.oz9aec.Gpredict
+    - io.github.foldynl.QLog
 firefox:
   homepage: "https://pskreporter.info/pskmap.html"
   bookmarks:

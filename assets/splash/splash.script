@@ -1,0 +1,82 @@
+# Number Stations boot splash (Plymouth script theme), made with linuxlive.
+# A waterfall scrolls down the whole screen behind the logo and the name; a
+# thin bar under the name fills as the computer starts.
+
+Window.SetBackgroundTopColor(0.949, 0.965, 0.976);
+Window.SetBackgroundBottomColor(0.949, 0.965, 0.976);
+sw = Window.GetWidth();
+sh = Window.GetHeight();
+
+# The waterfall: one image that repeats, scaled to cover the screen, in three
+# copies stacked so there is never a gap while it moves.
+strip_image = Image("strip.png");
+scale = Math.Max(sw / strip_image.GetWidth(), sh / strip_image.GetHeight());
+strip_image = strip_image.Scale(strip_image.GetWidth() * scale, strip_image.GetHeight() * scale);
+sh_strip = strip_image.GetHeight();
+sx = (sw - strip_image.GetWidth()) / 2;
+for (i = 0; i < 3; i++) {
+    strips[i] = Sprite(strip_image);
+    strips[i].SetX(sx);
+    strips[i].SetZ(-100);
+}
+offset = 0;
+
+fun place_strips() {
+    for (i = 0; i < 3; i++)
+        strips[i].SetY(offset + (i - 1) * sh_strip);
+}
+place_strips();
+
+# The centre: a soft panel, the logo, the name, a line and the progress bar.
+cx = sw / 2;
+cy = sh / 2;
+panel = Sprite(Image("panel.png"));
+panel.SetPosition(cx - panel.GetImage().GetWidth() / 2, cy - panel.GetImage().GetHeight() / 2, 10);
+# The distro's logo, which linuxlive puts in every splash as watermark.png.
+logo = Sprite(Image("watermark.png").Scale(150, 150));
+logo.SetPosition(cx - logo.GetImage().GetWidth() / 2, cy - 140, 20);
+title = Sprite(Image("title.png"));
+title.SetPosition(cx - title.GetImage().GetWidth() / 2, cy + 18, 20);
+sub = Sprite(Image("sub.png"));
+sub.SetPosition(cx - sub.GetImage().GetWidth() / 2, cy + 86, 20);
+bar_bg_image = Image("bar-bg.png");
+bar_image = Image("bar.png");
+bar_bg = Sprite(bar_bg_image);
+bar_bg.SetPosition(cx - bar_bg_image.GetWidth() / 2, cy + 126, 20);
+bar = Sprite();
+bar.SetPosition(cx - bar_bg_image.GetWidth() / 2, cy + 126, 21);
+
+# About 50 refreshes a second: one row each, so the waterfall moves at an
+# easy reading pace, new rows arriving at the top as in WSJT-X.
+fun refresh_callback() {
+    offset = offset + 1;
+    if (offset >= sh_strip) offset = 0;
+    place_strips();
+}
+Plymouth.SetRefreshFunction(refresh_callback);
+
+fun progress_callback(duration, progress) {
+    width = Math.Int(bar_image.GetWidth() * progress);
+    if (width > 0)
+        bar.SetImage(bar_image.Scale(width, bar_image.GetHeight()));
+}
+Plymouth.SetBootProgressFunction(progress_callback);
+
+# Messages (for example a disk check) and password prompts, under the panel.
+message = Sprite();
+message.SetPosition(cx, cy + 190, 30);
+fun message_callback(text) {
+    image = Image.Text(text, 0.094, 0.204, 0.275);
+    message.SetImage(image);
+    message.SetX(cx - image.GetWidth() / 2);
+}
+Plymouth.SetMessageFunction(message_callback);
+
+fun display_password_callback(prompt, bullets) {
+    text = prompt + "  ";
+    for (i = 0; i < bullets; i++) text = text + "*";
+    message_callback(text);
+}
+Plymouth.SetDisplayPasswordFunction(display_password_callback);
+fun display_normal_callback() { message.SetImage(Image.Text("", 0, 0, 0)); }
+Plymouth.SetDisplayNormalFunction(display_normal_callback);

@@ -30,7 +30,7 @@ concurrency:
 
 jobs:
   build:
-    uses: Eric-Ness/linuxlive/.github/workflows/build.yml@v0.8.2
+    uses: Eric-Ness/linuxlive/.github/workflows/build.yml@v0.9.0
     with:
       spec: linuxlive.yaml
       publish-image: true
