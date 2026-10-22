@@ -1,54 +1,76 @@
 # Number Stations boot splash (Plymouth script theme), made with linuxlive.
 # A waterfall scrolls down the whole screen behind the logo and the name; a
 # thin bar under the name fills as the computer starts.
+#
+# The screen can change size partway through the boot (when the graphics
+# driver takes over from the firmware's screen), so everything is laid out
+# again whenever it does: the waterfall rescaled to cover the new screen, the
+# panel, logo, name and bar centred on it.
 
 Window.SetBackgroundTopColor(0.949, 0.965, 0.976);
 Window.SetBackgroundBottomColor(0.949, 0.965, 0.976);
-sw = Window.GetWidth();
-sh = Window.GetHeight();
 
-# The waterfall: one image that repeats, scaled to cover the screen, in three
-# copies stacked so there is never a gap while it moves.
-strip_image = Image("strip.png");
-scale = Math.Max(sw / strip_image.GetWidth(), sh / strip_image.GetHeight());
-strip_image = strip_image.Scale(strip_image.GetWidth() * scale, strip_image.GetHeight() * scale);
-sh_strip = strip_image.GetHeight();
-sx = (sw - strip_image.GetWidth()) / 2;
+# The waterfall: one image that repeats, in three copies stacked so there is
+# never a gap while it moves.
+strip_source = Image("strip.png");
 for (i = 0; i < 3; i++) {
-    strips[i] = Sprite(strip_image);
-    strips[i].SetX(sx);
+    strips[i] = Sprite();
     strips[i].SetZ(-100);
 }
+
+# The centre: a soft panel, the distro's logo (linuxlive puts it in every
+# splash as watermark.png), the name, a line and the progress bar.
+panel = Sprite(Image("panel.png"));
+logo = Sprite(Image("watermark.png").Scale(150, 150));
+title = Sprite(Image("title.png"));
+sub = Sprite(Image("sub.png"));
+bar_bg_image = Image("bar-bg.png");
+bar_image = Image("bar.png");
+bar_bg = Sprite(bar_bg_image);
+bar = Sprite();
+message = Sprite();
+message.SetZ(30);
+
+sw = 0;
+sh = 0;
+sh_strip = 1;
 offset = 0;
+cx = 0;
+cy = 0;
 
 fun place_strips() {
     for (i = 0; i < 3; i++)
         strips[i].SetY(offset + (i - 1) * sh_strip);
 }
-place_strips();
 
-# The centre: a soft panel, the logo, the name, a line and the progress bar.
-cx = sw / 2;
-cy = sh / 2;
-panel = Sprite(Image("panel.png"));
-panel.SetPosition(cx - panel.GetImage().GetWidth() / 2, cy - panel.GetImage().GetHeight() / 2, 10);
-# The distro's logo, which linuxlive puts in every splash as watermark.png.
-logo = Sprite(Image("watermark.png").Scale(150, 150));
-logo.SetPosition(cx - logo.GetImage().GetWidth() / 2, cy - 140, 20);
-title = Sprite(Image("title.png"));
-title.SetPosition(cx - title.GetImage().GetWidth() / 2, cy + 18, 20);
-sub = Sprite(Image("sub.png"));
-sub.SetPosition(cx - sub.GetImage().GetWidth() / 2, cy + 86, 20);
-bar_bg_image = Image("bar-bg.png");
-bar_image = Image("bar.png");
-bar_bg = Sprite(bar_bg_image);
-bar_bg.SetPosition(cx - bar_bg_image.GetWidth() / 2, cy + 126, 20);
-bar = Sprite();
-bar.SetPosition(cx - bar_bg_image.GetWidth() / 2, cy + 126, 21);
+fun layout() {
+    sw = Window.GetWidth();
+    sh = Window.GetHeight();
+    scale = Math.Max(sw / strip_source.GetWidth(), sh / strip_source.GetHeight());
+    strip_image = strip_source.Scale(strip_source.GetWidth() * scale, strip_source.GetHeight() * scale);
+    sh_strip = strip_image.GetHeight();
+    for (i = 0; i < 3; i++) {
+        strips[i].SetImage(strip_image);
+        strips[i].SetX((sw - strip_image.GetWidth()) / 2);
+    }
+    if (offset >= sh_strip) offset = 0;
+    place_strips();
+    cx = sw / 2;
+    cy = sh / 2;
+    panel.SetPosition(cx - panel.GetImage().GetWidth() / 2, cy - panel.GetImage().GetHeight() / 2, 10);
+    logo.SetPosition(cx - logo.GetImage().GetWidth() / 2, cy - 140, 20);
+    title.SetPosition(cx - title.GetImage().GetWidth() / 2, cy + 18, 20);
+    sub.SetPosition(cx - sub.GetImage().GetWidth() / 2, cy + 86, 20);
+    bar_bg.SetPosition(cx - bar_bg_image.GetWidth() / 2, cy + 126, 20);
+    bar.SetPosition(cx - bar_bg_image.GetWidth() / 2, cy + 126, 21);
+    message.SetY(cy + 190);
+}
+layout();
 
 # About 50 refreshes a second: one row each, so the waterfall moves at an
 # easy reading pace, new rows arriving at the top as in WSJT-X.
 fun refresh_callback() {
+    if (Window.GetWidth() != sw || Window.GetHeight() != sh) layout();
     offset = offset + 1;
     if (offset >= sh_strip) offset = 0;
     place_strips();
@@ -63,8 +85,6 @@ fun progress_callback(duration, progress) {
 Plymouth.SetBootProgressFunction(progress_callback);
 
 # Messages (for example a disk check) and password prompts, under the panel.
-message = Sprite();
-message.SetPosition(cx, cy + 190, 30);
 fun message_callback(text) {
     image = Image.Text(text, 0.094, 0.204, 0.275);
     message.SetImage(image);
@@ -78,5 +98,8 @@ fun display_password_callback(prompt, bullets) {
     message_callback(text);
 }
 Plymouth.SetDisplayPasswordFunction(display_password_callback);
-fun display_normal_callback() { message.SetImage(Image.Text("", 0, 0, 0)); }
+
+fun display_normal_callback() {
+    message.SetImage(Image.Text("", 0, 0, 0));
+}
 Plymouth.SetDisplayNormalFunction(display_normal_callback);
