@@ -67,13 +67,21 @@ fun layout() {
 }
 layout();
 
-# About 50 refreshes a second: one row each, so the waterfall moves at an
-# easy reading pace, new rows arriving at the top as in WSJT-X.
+# Plymouth calls this about 50 times a second. Moving a full-screen image
+# repaints the whole screen, which is heavy where nothing helps draw (a
+# virtual machine without 3D, a slow PC) and can hold up the boot itself, so
+# the waterfall moves only every fifth time: two rows at a time, about ten
+# repaints a second, new rows arriving at the top as in WSJT-X.
+ticks = 0;
 fun refresh_callback() {
     if (Window.GetWidth() != sw || Window.GetHeight() != sh) layout();
-    offset = offset + 1;
-    if (offset >= sh_strip) offset = 0;
-    place_strips();
+    ticks = ticks + 1;
+    if (ticks >= 5) {
+        ticks = 0;
+        offset = offset + 2;
+        if (offset >= sh_strip) offset = 0;
+        place_strips();
+    }
 }
 Plymouth.SetRefreshFunction(refresh_callback);
 
